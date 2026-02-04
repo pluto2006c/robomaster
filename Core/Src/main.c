@@ -130,8 +130,6 @@ int main(void)
   DJI_Motor_Target(&RW_M3508, 0);
 
 
-
-
   /* USER CODE END 2 */
 
   /* Infinite loop */

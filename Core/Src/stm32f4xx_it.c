@@ -203,15 +203,17 @@ void SysTick_Handler(void)
   if (user_dbus_DR16.sw2==1) {
     DJI_Motor_Target(&LW_M3508, -5000);
     DJI_Motor_Target(&RW_M3508, 5000);
-    if (user_dbus_DR16.roll>0&&user_dbus_DR16.roll<=500) {
+    if (user_dbus_DR16.sw1==1) {
       DJI_Motor_Target(&TP_M2006, -400);
-    }else if (user_dbus_DR16.roll>500&&user_dbus_DR16.roll<=660) {
+    }else if (user_dbus_DR16.sw1==2) {
       DJI_Motor_Target(&TP_M2006, -3000);
-    }else if (user_dbus_DR16.roll<0&&user_dbus_DR16.roll>=-660) {
-      DJI_Motor_Target(&TP_M2006,400);
     }else {
       DJI_Motor_Target(&TP_M2006, 0);
     }
+  }else if (user_dbus_DR16.sw2==2) {
+    DJI_Motor_Target(&TP_M2006, 400);
+    DJI_Motor_Target(&LW_M3508, -5000);
+    DJI_Motor_Target(&RW_M3508, 5000);
   }else {
     DJI_Motor_Target(&LW_M3508, 0);
     DJI_Motor_Target(&RW_M3508, 0);
