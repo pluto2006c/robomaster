@@ -85,7 +85,6 @@ void user_remote_uart_callback(void * user_uart) {
 		}
 
 		remote.wheel = parse_11bit(remote_buf,65) - 1024;
-		remote.trigger =
 	}
 }
 
