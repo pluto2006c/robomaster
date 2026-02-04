@@ -3,7 +3,7 @@
 
 /* 包含头文件 ----------------------------------------------------------------*/
 #include "main.h"
-
+#include "user_dji_remote.h"
 /* 全局注册表 ----------------------------------------------------------------*/
 #define MAX_LOOP_EVENT 32
 void LOOP_EVENT_Handle(void);
@@ -40,6 +40,7 @@ extern DJI_MOTOR_DRIVES THC_GM6020;
 extern DJI_MOTOR_DRIVES LW_M3508;
 extern DJI_MOTOR_DRIVES RW_M3508;
 extern DJI_MOTOR_DRIVES TP_M2006;
+
 
 
 /* 全局结构体 ----------------------------------------------------------------*/

@@ -49,11 +49,11 @@ else ()
     add_compile_options(-Og -g)
 endif ()
 
-include_directories(Core/Inc Drivers/STM32F4xx_HAL_Driver/Inc Drivers/STM32F4xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32F4xx/Include Drivers/CMSIS/Include User_Algorithm/Inc User_Architect/Inc User_Drives/Inc User_Lib/Inc User_Status/Inc)
+include_directories(Core/Inc Drivers/STM32F4xx_HAL_Driver/Inc Drivers/STM32F4xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32F4xx/Include Drivers/CMSIS/Include User_Algorithm/Inc User_Architect/Inc User_Drives/Inc User_Lib/Inc User_Status/Inc Core/Inc Drivers/STM32F4xx_HAL_Driver/Inc Drivers/STM32F4xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32F4xx/Include Drivers/CMSIS/Include)
 
-add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F427xx)
+add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F427xx -DDEBUG -DUSE_HAL_DRIVER -DSTM32F427xx)
 
-file(GLOB_RECURSE SOURCES "User_Drives/*.*" "User_Algorithm/*.*" "User_Status/*.*" "User_Architect/*.*" "User_Lib/*.*" "Core/*.*" "Drivers/*.*")
+file(GLOB_RECURSE SOURCES "User_Drives/*.*" "User_Algorithm/*.*" "User_Status/*.*" "User_Architect/*.*" "User_Lib/*.*" "Core/*.*" "Drivers/*.*" "Core/*.*" "Drivers/*.*")
 
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F427IIHX_FLASH.ld)
 
