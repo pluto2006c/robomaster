@@ -59,7 +59,8 @@ DJI_MOTOR_DRIVES LW_M3508    = {0};
 DJI_MOTOR_DRIVES RW_M3508    = {0};
 DJI_MOTOR_DRIVES TP_M2006    = {0};
 
-
+//大疆图传
+VT03_DRIVES user_vt03 = {0};
 
 
 

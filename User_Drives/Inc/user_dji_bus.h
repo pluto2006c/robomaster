@@ -21,9 +21,6 @@ typedef struct  {
     uint8_t sw2;
 } DBUS_DRIVES;
 
-
-typedef long long LL;
-
 /* 函数声明 ------------------------------------------------------------------*/
 void DBUS_Init(DBUS_DRIVES* user_dbus,UART_HandleTypeDef* huart);
 

@@ -1,13 +1,12 @@
 /* 包含头文件 ----------------------------------------------------------------*/
-#include "user_dji_remote.h"
+#include "user_dji_vt03.h"
 #include "../../User_Drives/Inc/user_uart.h"
-
 #include <stdio.h>
-#include "stdlib.h"
 #include "string.h"
+
 /* 私有变量 ------------------------------------------------------------------*/
 
-static uint16_t crc16_init = 0xffff;
+static VT03_DRIVES* vt03_drive = NULL;
 
 static const uint16_t crc16_tab[256] =
 {
@@ -46,46 +45,56 @@ static const uint16_t crc16_tab[256] =
 };
 
 
-remote_data_t remote = {0};
-static uint8_t remote_buf[remote_BUFLEN];
-static char data_head[2] = {0xA9, 0x53};
-UART_DRIVES remote_data_uart = {0};
+
+
+
+
 /* 函数体 --------------------------------------------------------------------*/
 
-void REMOTE_Init() {
-	UART_Init(&remote_data_uart, &huart3, user_remote_uart_callback);
+uint16_t parse_11bit(const uint8_t *data, int offset_bits);
+uint8_t verify_crc16_check_sum(uint8_t *p_msg, uint16_t len);
+void user_remote_uart_callback(void * user_uart);
+
+void DJI_VT03_Init(VT03_DRIVES* vt03) {
+	UART_Init(vt03->remote_uart, &huart3, user_remote_uart_callback);
+	vt03_drive = vt03;
 }
 
 
 void user_remote_uart_callback(void * user_uart) {
 	UART_DRIVES *uart = (UART_DRIVES*)user_uart;
-	const uint16_t size= RBuffer_GetWithHLen(&uart->rx_ringBuffer, remote_buf, data_head, RBuffer_GetLength(&uart->rx_ringBuffer));
-	if (verify_crc16_check_sum(remote_buf,21)==true) {
-		remote.ch0 = parse_11bit(remote_buf,16) - 1024;
-		remote.ch1 = parse_11bit(remote_buf,27) - 1024;
-		remote.ch2 = parse_11bit(remote_buf,38) - 1024;
-		remote.ch3 = parse_11bit(remote_buf,49) - 1024;
 
-		int byte_offset = 60 / 8;
-		int bit_offset = 60 % 8;
-		// 挡位切换开关（2位）
-		remote.mode_sw = (remote_buf[byte_offset] >> (6 - bit_offset)) & 0x03;
+	uint8_t buf[DJI_VT03_BUFFLEN] = {0};
+	const char head[3] = {0xA9, 0x53, 0x00};
+	if (!RBuffer_GetWithHLen(&uart->rx_ringBuffer, buf, head, RBuffer_GetLength(&uart->rx_ringBuffer)))
+		return;
 
-		// 暂停按键（1位）
-		remote.pause = (remote_buf[byte_offset] >> (5 - bit_offset)) & 0x01;
+	if (!verify_crc16_check_sum(buf,DJI_VT03_BUFFLEN))
+		return;
 
-		// 自定义左键（1位）
-		remote.fn1 = (remote_buf[byte_offset] >> (4 - bit_offset)) & 0x01;
+	vt03_drive->ch0 = parse_11bit(buf,16) - 1024;
+	vt03_drive->ch1 = parse_11bit(buf,27) - 1024;
+	vt03_drive->ch2 = parse_11bit(buf,38) - 1024;
+	vt03_drive->ch3 = parse_11bit(buf,49) - 1024;
 
-		// 自定义右键（1位） - 注意：可能跨字节
-		if (bit_offset <= 3) {
-			remote.fn2 = (remote_buf[byte_offset] >> (3 - bit_offset)) & 0x01;
-		} else {
-			remote.fn2 = (remote_buf[byte_offset + 1] >> (11 - bit_offset)) & 0x01;
-		}
+	const int byte_offset = 60 / 8;
+	const int bit_offset = 60 % 8;
 
-		remote.wheel = parse_11bit(remote_buf,65) - 1024;
-	}
+	// 挡位切换开关（2位）
+	vt03_drive->mode_sw =buf[byte_offset] >> (6 - bit_offset) & 0x03;
+
+	// 暂停按键（1位）
+	vt03_drive->pause = (buf[byte_offset] >> (5 - bit_offset)) & 0x01;
+
+	// 自定义左键（1位）
+	vt03_drive->fn1 = (buf[byte_offset] >> (4 - bit_offset)) & 0x01;
+
+	// 自定义右键（1位）
+
+	vt03_drive->fn2 = (buf[byte_offset + 1] >> (11 - bit_offset)) & 0x01;
+
+
+	vt03_drive->wheel = parse_11bit(buf,65) - 1024;
 }
 
 
@@ -139,14 +148,16 @@ static uint16_t get_crc16_check_sum(uint8_t *p_msg, uint16_t len, uint16_t crc16
  * @param len Stream length=data+checksum
  * @return bool Crc16 check result
  */
-bool verify_crc16_check_sum(uint8_t *p_msg, uint16_t len)
+uint8_t verify_crc16_check_sum(uint8_t *p_msg, uint16_t len)
 {
 	uint16_t w_expected = 0;
 
 	if((p_msg == NULL) || (len <= 2))
 	{
-		return false;
+		return 0;
 	}
+
+	const uint16_t crc16_init = 0xffff;
 	w_expected = get_crc16_check_sum(p_msg, len - 2, crc16_init);
 
 	return ((w_expected & 0xff) == p_msg[len - 2] && ((w_expected >> 8) & 0xff) == p_msg[len - 1]);

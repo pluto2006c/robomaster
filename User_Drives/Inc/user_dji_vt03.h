@@ -2,8 +2,8 @@
 // Created by Pluto on 2026/2/4.
 //
 
-#ifndef DJI_A_BOARD_USER_DJI_REMOTE_H
-#define DJI_A_BOARD_USER_DJI_REMOTE_H
+#ifndef __USER_DJI_VTO3_H__
+#define __USER_DJI_VTO3_H__
 
 /* 包含头文件 ----------------------------------------------------------------*/
 #include "main.h"
@@ -11,11 +11,12 @@
 #include "../../Core/Inc/bsp_config.h"
 #include <stdbool.h>
 /* 宏定义 --------------------------------------------------------------------*/
-#define remote_BUFLEN      (21)
+#define DJI_VT03_BUFFLEN      (21)
 
 /* 类定义 --------------------------------------------------------------------*/
-typedef __packed struct
+typedef struct
 {
+    UART_DRIVES* remote_uart;
     uint8_t sof_1;
     uint8_t sof_2;
     uint64_t ch0:11;
@@ -37,14 +38,13 @@ typedef __packed struct
     uint8_t mouse_middle:2;
     uint16_t key;
     uint16_t crc16;
-}remote_data_t;
+}VT03_DRIVES;
 
 /* 函数声明 ------------------------------------------------------------------*/
-#include "../../User_Drives/Inc/user_uart.h"
-extern UART_DRIVES remote_data_uart;
-extern remote_data_t remote;
-void user_remote_uart_callback(void * user_uart);
-void REMOTE_Init();
-bool verify_crc16_check_sum(uint8_t *p_msg, uint16_t len);
-uint16_t parse_11bit(const uint8_t *data, int offset_bits);
-#endif //DJI_A_BOARD_USER_DJI_REMOTE_H
+
+
+void DJI_VT03_Init(VT03_DRIVES* vt03);
+
+
+
+#endif //__USER_DJI_VTO3_H__
