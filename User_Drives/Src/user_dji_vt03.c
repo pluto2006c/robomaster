@@ -1,15 +1,13 @@
 /* 包含头文件 ----------------------------------------------------------------*/
-#include "user_dji_vt03.h"
-#include "../../User_Drives/Inc/user_uart.h"
+#include "../Inc/user_dji_vt03.h"
 #include <stdio.h>
-#include "string.h"
+#include <string.h>
 
 /* 私有变量 ------------------------------------------------------------------*/
-
 static VT03_DRIVES* vt03_drive = NULL;
 
-static const uint16_t crc16_tab[256] =
-{
+/* CRC16查找表 */
+static const uint16_t crc16_tab[256] = {
     0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf,
     0x8c48, 0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5, 0xe97e, 0xf8f7,
     0x1081, 0x0108, 0x3393, 0x221a, 0x56a5, 0x472c, 0x75b7, 0x643e,
@@ -45,120 +43,143 @@ static const uint16_t crc16_tab[256] =
 };
 
 
-
-
-
+/* 私有函数声明 --------------------------------------------------------------*/
+static uint16_t VT03_Parse11Bit(const uint8_t* data, int offset_bits);
+static uint16_t VT03_GetCRC16(uint8_t* p_msg, uint16_t len, uint16_t crc16);
+static void VT03_UartCallback(void* user_uart);
 
 /* 函数体 --------------------------------------------------------------------*/
 
-uint16_t parse_11bit(const uint8_t *data, int offset_bits);
-uint8_t verify_crc16_check_sum(uint8_t *p_msg, uint16_t len);
-void user_remote_uart_callback(void * user_uart);
+/**
+ * @brief 从数据流中解析11位数据
+ * @param data 数据缓冲区
+ * @param offset_bits 位偏移量
+ * @return 解析出的11位数据
+ */
+static uint16_t VT03_Parse11Bit(const uint8_t* data, int offset_bits) {
+    const int byte_offset = offset_bits / 8;
+    const int bit_offset = offset_bits % 8;
+    uint32_t value = 0;
 
+    // 读取11位(可能跨2或3字节)
+    if (bit_offset <= 5) {
+        // 完全在相邻两个字节内
+        value = (data[byte_offset] << (3 + bit_offset)) | 
+                (data[byte_offset + 1] >> (5 - bit_offset));
+    } else {
+        // 跨三个字节
+        value = (data[byte_offset] << (3 + bit_offset)) |
+                (data[byte_offset + 1] << (bit_offset - 5)) |
+                (data[byte_offset + 2] >> (13 - bit_offset));
+    }
+    
+    return value & 0x7FF;  // 取低11位
+}
+
+/**
+ * @brief 检查指定键盘按键是否按下
+ * @param keyboard 键盘按键枚举
+ * @return 1-按下, 0-未按下
+ */
+uint8_t VT03_IsKeyboardDown(const Keyboard keyboard) {
+    if (vt03_drive == NULL) {
+        return 0;
+    }
+    return (uint8_t)((vt03_drive->key_value & (1 << keyboard)) != 0);
+}
+
+/**
+ * @brief 计算CRC16校验和
+ * @param p_msg 待校验数据
+ * @param len 数据长度
+ * @param crc16 初始CRC16值
+ * @return CRC16校验和
+ */
+static uint16_t VT03_GetCRC16(uint8_t* p_msg, uint16_t len, uint16_t crc16) {
+    uint8_t data;
+
+    if (p_msg == NULL) {
+        return 0xFFFF;
+    }
+
+    while (len--) {
+        data = *p_msg++;
+        crc16 = ((uint16_t)(crc16) >> 8) ^ 
+                crc16_tab[((uint16_t)(crc16) ^ (uint16_t)(data)) & 0x00FF];
+    }
+
+    return crc16;
+}
+/**
+ * @brief 验证CRC16校验和
+ * @param p_msg 待验证数据(包含校验和)
+ * @param len 数据流长度(数据+校验和)
+ * @return 1-校验通过, 0-校验失败
+ */
+uint8_t VT03_VerifyCRC16(uint8_t* p_msg, uint16_t len) {
+    uint16_t w_expected = 0;
+
+    if ((p_msg == NULL) || (len <= 2)) {
+        return 0;
+    }
+
+    const uint16_t crc16_init = 0xFFFF;
+    w_expected = VT03_GetCRC16(p_msg, len - 2, crc16_init);
+
+    return ((w_expected & 0xFF) == p_msg[len - 2] && 
+            ((w_expected >> 8) & 0xFF) == p_msg[len - 1]);
+}
+
+/**
+ * @brief UART接收回调函数
+ * @param user_uart UART驱动指针
+ */
+static void VT03_UartCallback(void* user_uart) {
+    UART_DRIVES* uart = (UART_DRIVES*)user_uart;
+
+    uint8_t buf[DJI_VT03_BUFFLEN] = {0};
+    const char head[3] = {DJI_VT03_SOF_1, DJI_VT03_SOF_2, 0x00};
+    
+    // 从环形缓冲区获取数据
+    if (!RBuffer_GetWithHLen(&uart->rx_ringBuffer, buf, head, 
+                             RBuffer_GetLength(&uart->rx_ringBuffer))) {
+        return;
+    }
+
+    // 验证CRC16校验和
+    if (!VT03_VerifyCRC16(buf, DJI_VT03_BUFFLEN)) {
+        return;
+    }
+
+    // 解析遥控器通道数据
+    vt03_drive->ch0 = VT03_Parse11Bit(buf, 16) - DJI_VT03_CH_OFFSET;
+    vt03_drive->ch1 = VT03_Parse11Bit(buf, 27) - DJI_VT03_CH_OFFSET;
+    vt03_drive->ch2 = VT03_Parse11Bit(buf, 38) - DJI_VT03_CH_OFFSET;
+    vt03_drive->ch3 = VT03_Parse11Bit(buf, 49) - DJI_VT03_CH_OFFSET;
+
+    // 解析开关和按键数据
+    const int byte_offset = 60 / 8;
+    const int bit_offset = 60 % 8;
+
+    vt03_drive->mode_sw = (buf[byte_offset] >> (6 - bit_offset)) & 0x03;
+    vt03_drive->pause = (buf[byte_offset] >> (5 - bit_offset)) & 0x01;
+    vt03_drive->fn1 = (buf[byte_offset] >> (4 - bit_offset)) & 0x01;
+    vt03_drive->fn2 = (buf[byte_offset + 1] >> (11 - bit_offset)) & 0x01;
+    vt03_drive->wheel = VT03_Parse11Bit(buf, 65) - DJI_VT03_CH_OFFSET;
+    
+    // 解析键盘数据
+    vt03_drive->key_value = (uint16_t)(buf[17] >> 0 | buf[18] << 8);
+}
+
+/**
+ * @brief 初始化DJI VT03遥控器
+ * @param vt03 VT03驱动结构体指针
+ */
 void DJI_VT03_Init(VT03_DRIVES* vt03) {
-	UART_Init(vt03->remote_uart, &huart3, user_remote_uart_callback);
-	vt03_drive = vt03;
-}
-
-
-void user_remote_uart_callback(void * user_uart) {
-	UART_DRIVES *uart = (UART_DRIVES*)user_uart;
-
-	uint8_t buf[DJI_VT03_BUFFLEN] = {0};
-	const char head[3] = {0xA9, 0x53, 0x00};
-	if (!RBuffer_GetWithHLen(&uart->rx_ringBuffer, buf, head, RBuffer_GetLength(&uart->rx_ringBuffer)))
-		return;
-
-	if (!verify_crc16_check_sum(buf,DJI_VT03_BUFFLEN))
-		return;
-
-	vt03_drive->ch0 = parse_11bit(buf,16) - 1024;
-	vt03_drive->ch1 = parse_11bit(buf,27) - 1024;
-	vt03_drive->ch2 = parse_11bit(buf,38) - 1024;
-	vt03_drive->ch3 = parse_11bit(buf,49) - 1024;
-
-	const int byte_offset = 60 / 8;
-	const int bit_offset = 60 % 8;
-
-	// 挡位切换开关（2位）
-	vt03_drive->mode_sw =buf[byte_offset] >> (6 - bit_offset) & 0x03;
-
-	// 暂停按键（1位）
-	vt03_drive->pause = (buf[byte_offset] >> (5 - bit_offset)) & 0x01;
-
-	// 自定义左键（1位）
-	vt03_drive->fn1 = (buf[byte_offset] >> (4 - bit_offset)) & 0x01;
-
-	// 自定义右键（1位）
-
-	vt03_drive->fn2 = (buf[byte_offset + 1] >> (11 - bit_offset)) & 0x01;
-
-
-	vt03_drive->wheel = parse_11bit(buf,65) - 1024;
-}
-
-
-uint16_t parse_11bit(const uint8_t *data, int offset_bits) {
-	int byte_offset = offset_bits / 8;
-	int bit_offset = offset_bits % 8;
-	uint32_t value = 0;
-
-	// 读取11位（可能跨2或3字节）
-	if (bit_offset <= 5) {
-		// 完全在相邻两个字节内
-		value = (data[byte_offset] << (3 + bit_offset)) | (data[byte_offset + 1] >> (5 - bit_offset));
-	} else {
-		// 跨三个字节
-		value = (data[byte_offset] << (3 + bit_offset)) |
-				(data[byte_offset + 1] << (bit_offset - 5)) |
-				(data[byte_offset + 2] >> (13 - bit_offset));
-	}
-	return value & 0x7FF;  // 取低11位
-}
-
-/**
- * @brief Get the crc16 checksum
- *
- * @param p_msg Data to check
- * @param lenData length
- * @param crc16 Crc16 initialized checksum
- * @return crc16 Crc16 checksum
- */
-static uint16_t get_crc16_check_sum(uint8_t *p_msg, uint16_t len, uint16_t crc16)
-{
-	uint8_t data;
-
-	if(p_msg == NULL)
-	{
-		return 0xffff;
-	}
-
-	while(len--)
-	{
-		data = *p_msg++;
-		(crc16) = ((uint16_t)(crc16) >> 8) ^ crc16_tab[((uint16_t)(crc16) ^ (uint16_t)(data)) & 0x00ff];
-	}
-
-	return crc16;
-}
-/**
- * @brief crc16 verify function
- *
- * @param p_msg Data to verify
- * @param len Stream length=data+checksum
- * @return bool Crc16 check result
- */
-uint8_t verify_crc16_check_sum(uint8_t *p_msg, uint16_t len)
-{
-	uint16_t w_expected = 0;
-
-	if((p_msg == NULL) || (len <= 2))
-	{
-		return 0;
-	}
-
-	const uint16_t crc16_init = 0xffff;
-	w_expected = get_crc16_check_sum(p_msg, len - 2, crc16_init);
-
-	return ((w_expected & 0xff) == p_msg[len - 2] && ((w_expected >> 8) & 0xff) == p_msg[len - 1]);
+    if (vt03 == NULL) {
+        return;
+    }
+    
+    vt03_drive = vt03;
+    UART_Init(vt03->remote_uart, &huart3, VT03_UartCallback);
 }
