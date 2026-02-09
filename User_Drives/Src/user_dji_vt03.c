@@ -166,7 +166,7 @@ static void VT03_UartCallback(void* user_uart) {
     vt03_drive->fn1 = (buf[byte_offset] >> (4 - bit_offset)) & 0x01;
     vt03_drive->fn2 = (buf[byte_offset + 1] >> (11 - bit_offset)) & 0x01;
     vt03_drive->wheel = VT03_Parse11Bit(buf, 65) - DJI_VT03_CH_OFFSET;
-    
+	vt03_drive->trigger = ((buf[9] & 00001000) != 0);
     // 解析键盘数据
     vt03_drive->key_value = (uint16_t)(buf[17] >> 0 | buf[18] << 8);
 }

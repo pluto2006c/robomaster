@@ -199,7 +199,7 @@ void SysTick_Handler(void)
 
   // 舵电机控制
   // 函数的第二个参数是目标角度，取值范围 0-8095，对应 0-360 度
-  DJI_Motor_Target(&PICH_GM6020, 3700.0700f - 3.0667f * 0.8f * (float) user_dbus_DR16.ch1);
+  /*DJI_Motor_Target(&PICH_GM6020, 3700.0700f - 3.0667f * 0.8f * (float) user_dbus_DR16.ch1);
   if (user_dbus_DR16.sw2==1) {
     DJI_Motor_Target(&LW_M3508, -5000);
     DJI_Motor_Target(&RW_M3508, 5000);
@@ -220,6 +220,8 @@ void SysTick_Handler(void)
   }
   DJI_Motor_Execute(&user_can_1);
 
+  //发送遥控器数据
+
   uint8_t user_can_2_send_frame[8] = {0};
 
   user_can_2_send_frame [0] = (uint8_t) (user_dbus_DR16.ch2 >> 0);
@@ -231,24 +233,45 @@ void SysTick_Handler(void)
   user_can_2_send_frame [6] = (uint8_t) (user_dbus_DR16.ch1 >> 0);
   user_can_2_send_frame [7] = (uint8_t) (user_dbus_DR16.ch1 >> 8);
 
+  CAN_Send(&user_can_2, Re_control_data_ID_1 , user_can_2_send_frame, 8);*/
+
+  DJI_Motor_Target(&PICH_GM6020, 3700.0700f - 3.0667f * 0.8f * (float) user_vt03.ch1);
+  if (user_vt03.fn2==1) {
+    DJI_Motor_Target(&LW_M3508, -5000);
+    DJI_Motor_Target(&RW_M3508, 5000);
+    if (user_vt03.fn1==1) {
+      DJI_Motor_Target(&TP_M2006, -400);
+    }else if (user_vt03.fn1==2) {
+      DJI_Motor_Target(&TP_M2006, -3000);
+    }else {
+      DJI_Motor_Target(&TP_M2006, 0);
+    }
+  }else if (user_vt03.fn2==2) {
+    DJI_Motor_Target(&TP_M2006, 400);
+    DJI_Motor_Target(&LW_M3508, -5000);
+    DJI_Motor_Target(&RW_M3508, 5000);
+  }else {
+    DJI_Motor_Target(&LW_M3508, 0);
+    DJI_Motor_Target(&RW_M3508, 0);
+  }
+  DJI_Motor_Execute(&user_can_1);
+
+  //发送遥控器数据
+
+  uint8_t user_can_2_send_frame[8] = {0};
+
+  user_can_2_send_frame [0] = (uint8_t) (user_vt03.ch2 >> 0);
+  user_can_2_send_frame [1] = (uint8_t) (user_vt03.ch2 >> 8);
+  user_can_2_send_frame [2] = (uint8_t) (user_vt03.ch3 >> 0);
+  user_can_2_send_frame [3] = (uint8_t) (user_vt03.ch3 >> 8);
+  user_can_2_send_frame [4] = (uint8_t) (user_vt03.ch0 >> 0);
+  user_can_2_send_frame [5] = (uint8_t) (user_vt03.ch0 >> 8);
+  user_can_2_send_frame [6] = (uint8_t) (user_vt03.ch1 >> 0);
+  user_can_2_send_frame [7] = (uint8_t) (user_vt03.ch1 >> 8);
+
   CAN_Send(&user_can_2, Re_control_data_ID_1 , user_can_2_send_frame, 8);
 
- 
 
-  // 发送轮电机控制报文
-
-  /*uint8_t C6x0_control_id_1_frame   [8] = {0};
-
-  C6x0_control_id_1_frame   [2 * 1 - 1] = (uint8_t) ((int16_t)( 10 * ch1) >> 0);
-  C6x0_control_id_1_frame   [2 * 1 - 2] = (uint8_t) ((int16_t)( 10 * ch1) >> 8);
-  C6x0_control_id_1_frame   [2 * 2 - 1] = (uint8_t) ((int16_t)( 10 * ch1) >> 0);
-  C6x0_control_id_1_frame   [2 * 2 - 2] = (uint8_t) ((int16_t)( 10 * ch1) >> 8);
-  C6x0_control_id_1_frame   [2 * 3 - 1] = (uint8_t) ((int16_t)( 10 * ch1) >> 0);
-  C6x0_control_id_1_frame   [2 * 3 - 2] = (uint8_t) ((int16_t)( 10 * ch1) >> 8);
-  C6x0_control_id_1_frame   [2 * 4 - 1] = (uint8_t) ((int16_t)(-10 * ch1) >> 0);
-  C6x0_control_id_1_frame   [2 * 4 - 2] = (uint8_t) ((int16_t)(-10 * ch1) >> 8);
-
-  CAN_Send(&user_can_1, C6x0_CURRENT_CONTROL_ID_1, C6x0_control_id_1_frame, 8);*/
 
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
