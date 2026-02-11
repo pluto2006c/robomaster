@@ -278,10 +278,10 @@ void SysTick_Handler(void)
 
   uint8_t user_can_2_send_frame[8] = {0};
 
-  user_can_2_send_frame [0] = (uint8_t) (user_vt03.ch2 >> 0);
-  user_can_2_send_frame [1] = (uint8_t) (user_vt03.ch2 >> 8);
-  user_can_2_send_frame [2] = (uint8_t) (user_vt03.ch3 >> 0);
-  user_can_2_send_frame [3] = (uint8_t) (user_vt03.ch3 >> 8);
+  user_can_2_send_frame [0] = (uint8_t) (user_vt03.ch3 >> 0);
+  user_can_2_send_frame [1] = (uint8_t) (user_vt03.ch3 >> 8);
+  user_can_2_send_frame [2] = (uint8_t) (user_vt03.ch2 >> 0);
+  user_can_2_send_frame [3] = (uint8_t) (user_vt03.ch2 >> 8);
   user_can_2_send_frame [4] = (uint8_t) (v >> 0);
   user_can_2_send_frame [5] = (uint8_t) (v >> 8);
   user_can_2_send_frame [6] = (uint8_t) (user_vt03.ch0 >> 0);
