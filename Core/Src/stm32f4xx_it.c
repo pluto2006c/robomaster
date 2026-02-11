@@ -243,43 +243,45 @@ void SysTick_Handler(void)
     DJI_Motor_Target(&LW_M3508, -5000);
     DJI_Motor_Target(&RW_M3508, 5000);
     if (user_vt03.trigger == 1) {
-      DJI_Motor_Target(&TP_M2006, 2000);
+      DJI_Motor_Target(&TP_M2006, -400);
     }else {
       DJI_Motor_Target(&TP_M2006, 0);
     }
-    if(user_vt03.fn2 == 1){
+    if(user_vt03.fn2 == 1) {
       DJI_Motor_Target(&TP_M2006, 400);
+    }
   }else if (user_vt03.mode_sw == 2) {
-    //连发
+      //连发
     DJI_Motor_Target(&LW_M3508, -5000);
     DJI_Motor_Target(&RW_M3508, 5000);
     if (user_vt03.trigger == 1) {
-      DJI_Motor_Target(&TP_M2006, 2000);
+      DJI_Motor_Target(&TP_M2006, -2000);
     }else {
       DJI_Motor_Target(&TP_M2006, 0);
     }
-    if(user_vt03.fn2 == 1){
+    if(user_vt03.fn2 == 1) {
       DJI_Motor_Target(&TP_M2006, 400);
-
-
+    }
   }else {
     DJI_Motor_Target(&LW_M3508, 0);
     DJI_Motor_Target(&RW_M3508, 0);
     DJI_Motor_Target(&TP_M2006, 0);
   }
+
   DJI_Motor_Execute(&user_can_1);
+
   static uint16_t v = 0 ;
   if (user_vt03.fn1 == 1) {
     v = user_vt03.wheel;
   }
-  //发送遥控器数据
+      //发送遥控器数据
 
   uint8_t user_can_2_send_frame[8] = {0};
 
-  user_can_2_send_frame [0] = (uint8_t) (user_vt03.ch3 >> 0);
-  user_can_2_send_frame [1] = (uint8_t) (user_vt03.ch3 >> 8);
-  user_can_2_send_frame [2] = (uint8_t) (user_vt03.ch2 >> 0);
-  user_can_2_send_frame [3] = (uint8_t) (user_vt03.ch2 >> 8);
+  user_can_2_send_frame [0] = (uint8_t) (user_vt03.ch2 >> 0);
+  user_can_2_send_frame [1] = (uint8_t) (user_vt03.ch2 >> 8);
+  user_can_2_send_frame [2] = (uint8_t) (user_vt03.ch3 >> 0);
+  user_can_2_send_frame [3] = (uint8_t) (user_vt03.ch3 >> 8);
   user_can_2_send_frame [4] = (uint8_t) (v >> 0);
   user_can_2_send_frame [5] = (uint8_t) (v >> 8);
   user_can_2_send_frame [6] = (uint8_t) (user_vt03.ch0 >> 0);
@@ -289,12 +291,12 @@ void SysTick_Handler(void)
 
 
 
-  /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
+      /* USER CODE END SysTick_IRQn 0 */
+      HAL_IncTick();
+      /* USER CODE BEGIN SysTick_IRQn 1 */
 
-  /* USER CODE END SysTick_IRQn 1 */
-}
+      /* USER CODE END SysTick_IRQn 1 */
+  }
 
 /******************************************************************************/
 /* STM32F4xx Peripheral Interrupt Handlers                                    */
