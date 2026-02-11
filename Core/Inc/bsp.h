@@ -14,8 +14,8 @@ extern uint8_t loop_event_num;
 /* 接口定义 ------------------------------------------------------------------*/
 // 调试串口
 #include "../../User_Drives/Inc/user_uart.h"
-extern UART_DRIVES user_debug_uart;
-void user_debug_uart_callback(void * user_uart);
+//extern UART_DRIVES user_debug_uart;
+//void user_debug_uart_callback(void * user_uart);
 
 // 大疆 DR16 接收机
 #include "../../User_Drives/Inc/user_dji_bus.h"

@@ -41,24 +41,22 @@ typedef enum {
  * @brief DJI VT03遥控器数据结构
  */
 typedef struct {
-    UART_DRIVES* remote_uart;  // UART驱动指针
-    
     // 帧头
     uint8_t sof_1;             // 起始字节1
     uint8_t sof_2;             // 起始字节2
     
     // 遥控器通道数据
-    uint16_t ch0;              // 通道0 (右摇杆水平)
-    uint16_t ch1;              // 通道1 (右摇杆垂直)
-    uint16_t ch2;              // 通道2 (左摇杆水平)
-    uint16_t ch3;              // 通道3 (左摇杆垂直)
+    int16_t ch0;              // 通道0 (右摇杆水平)
+    int16_t ch1;              // 通道1 (右摇杆垂直)
+    int16_t ch2;              // 通道2 (左摇杆水平)
+    int16_t ch3;              // 通道3 (左摇杆垂直)
     
     // 开关和按键
     uint16_t mode_sw;          // 模式开关
     uint16_t pause;            // 暂停开关
     uint8_t fn1;               // 功能键1
     uint8_t fn2;               // 功能键2
-    uint16_t wheel;            // 滚轮值
+    int16_t wheel;            // 滚轮值
     uint8_t trigger;           // 扳机
     
     // 鼠标数据

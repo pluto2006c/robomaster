@@ -6,6 +6,11 @@
 /* 私有变量 ------------------------------------------------------------------*/
 static VT03_DRIVES* vt03_drive = NULL;
 
+UART_DRIVES vt03_uart = {0};
+uint8_t buf[DJI_VT03_BUFFLEN] = {0};
+
+
+
 /* CRC16查找表 */
 static const uint16_t crc16_tab[256] = {
     0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf,
@@ -44,37 +49,13 @@ static const uint16_t crc16_tab[256] = {
 
 
 /* 私有函数声明 --------------------------------------------------------------*/
-static uint16_t VT03_Parse11Bit(const uint8_t* data, int offset_bits);
 static uint16_t VT03_GetCRC16(uint8_t* p_msg, uint16_t len, uint16_t crc16);
 static void VT03_UartCallback(void* user_uart);
 
 /* 函数体 --------------------------------------------------------------------*/
 
-/**
- * @brief 从数据流中解析11位数据
- * @param data 数据缓冲区
- * @param offset_bits 位偏移量
- * @return 解析出的11位数据
- */
-static uint16_t VT03_Parse11Bit(const uint8_t* data, int offset_bits) {
-    const int byte_offset = offset_bits / 8;
-    const int bit_offset = offset_bits % 8;
-    uint32_t value = 0;
 
-    // 读取11位(可能跨2或3字节)
-    if (bit_offset <= 5) {
-        // 完全在相邻两个字节内
-        value = (data[byte_offset] << (3 + bit_offset)) | 
-                (data[byte_offset + 1] >> (5 - bit_offset));
-    } else {
-        // 跨三个字节
-        value = (data[byte_offset] << (3 + bit_offset)) |
-                (data[byte_offset + 1] << (bit_offset - 5)) |
-                (data[byte_offset + 2] >> (13 - bit_offset));
-    }
-    
-    return value & 0x7FF;  // 取低11位
-}
+
 
 /**
  * @brief 检查指定键盘按键是否按下
@@ -126,8 +107,7 @@ uint8_t VT03_VerifyCRC16(uint8_t* p_msg, uint16_t len) {
     const uint16_t crc16_init = 0xFFFF;
     w_expected = VT03_GetCRC16(p_msg, len - 2, crc16_init);
 
-    return ((w_expected & 0xFF) == p_msg[len - 2] && 
-            ((w_expected >> 8) & 0xFF) == p_msg[len - 1]);
+    return ((w_expected & 0xFF) == p_msg[len - 2] && ((w_expected >> 8) & 0xFF) == p_msg[len - 1]);
 }
 
 /**
@@ -137,12 +117,10 @@ uint8_t VT03_VerifyCRC16(uint8_t* p_msg, uint16_t len) {
 static void VT03_UartCallback(void* user_uart) {
     UART_DRIVES* uart = (UART_DRIVES*)user_uart;
 
-    uint8_t buf[DJI_VT03_BUFFLEN] = {0};
     const char head[3] = {DJI_VT03_SOF_1, DJI_VT03_SOF_2, 0x00};
-    
+
     // 从环形缓冲区获取数据
-    if (!RBuffer_GetWithHLen(&uart->rx_ringBuffer, buf, head, 
-                             RBuffer_GetLength(&uart->rx_ringBuffer))) {
+    if (!RBuffer_GetWithHLen(&uart->rx_ringBuffer, buf, head,DJI_VT03_BUFFLEN )) {
         return;
     }
 
@@ -152,21 +130,16 @@ static void VT03_UartCallback(void* user_uart) {
     }
 
     // 解析遥控器通道数据
-    vt03_drive->ch0 = VT03_Parse11Bit(buf, 16) - DJI_VT03_CH_OFFSET;
-    vt03_drive->ch1 = VT03_Parse11Bit(buf, 27) - DJI_VT03_CH_OFFSET;
-    vt03_drive->ch2 = VT03_Parse11Bit(buf, 38) - DJI_VT03_CH_OFFSET;
-    vt03_drive->ch3 = VT03_Parse11Bit(buf, 49) - DJI_VT03_CH_OFFSET;
-
-    // 解析开关和按键数据
-    const int byte_offset = 60 / 8;
-    const int bit_offset = 60 % 8;
-
-    vt03_drive->mode_sw = (buf[byte_offset] >> (6 - bit_offset)) & 0x03;
-    vt03_drive->pause = (buf[byte_offset] >> (5 - bit_offset)) & 0x01;
-    vt03_drive->fn1 = (buf[byte_offset] >> (4 - bit_offset)) & 0x01;
-    vt03_drive->fn2 = (buf[byte_offset + 1] >> (11 - bit_offset)) & 0x01;
-    vt03_drive->wheel = VT03_Parse11Bit(buf, 65) - DJI_VT03_CH_OFFSET;
-	vt03_drive->trigger = ((buf[9] & 00001000) != 0);
+    vt03_drive->ch0 = ((uint16_t)(buf[2]>>0 | buf[3]<<8) & 0b0000011111111111) - DJI_VT03_CH_OFFSET;
+    vt03_drive->ch1 = ((uint16_t)(buf[3]>>3 | buf[4]<<5) & 0b0000011111111111) - DJI_VT03_CH_OFFSET;
+    vt03_drive->ch2 = ((uint16_t)(buf[4]>>6 | buf[5]<<2 | buf[6]<< 10) & 0b0000011111111111) - DJI_VT03_CH_OFFSET;
+    vt03_drive->ch3 = ((uint16_t)(buf[6]>>1 | buf[7]<<7) & 0b0000011111111111) - DJI_VT03_CH_OFFSET;
+    vt03_drive->mode_sw = (buf[7]>>4) & 0b00000011;
+    vt03_drive->pause = (buf[7]>>6) & 0b00000001;
+    vt03_drive->fn1 = (buf[7]>>7) & 0b00000001;
+    vt03_drive->fn2 = (buf[8] & 0b00000001);
+    vt03_drive->wheel = ((uint16_t)(buf[8]>>1 | buf[9]<<7) & 0b0000011111111111) - DJI_VT03_CH_OFFSET;
+	vt03_drive->trigger = (buf[9]>>4) & 0b00000001;
     // 解析键盘数据
     vt03_drive->key_value = (uint16_t)(buf[17] >> 0 | buf[18] << 8);
 }
@@ -176,10 +149,6 @@ static void VT03_UartCallback(void* user_uart) {
  * @param vt03 VT03驱动结构体指针
  */
 void DJI_VT03_Init(VT03_DRIVES* vt03) {
-    if (vt03 == NULL) {
-        return;
-    }
-    
     vt03_drive = vt03;
-    UART_Init(vt03->remote_uart, &huart3, VT03_UartCallback);
+    UART_Init(&vt03_uart, &huart3, VT03_UartCallback);
 }

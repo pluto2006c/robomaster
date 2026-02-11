@@ -144,11 +144,11 @@ uint16_t RBuffer_GetWithHLen(RingBuffer* buffer, uint8_t *message, const char* h
                 head_sign &= RBuffer_Read(buffer,buffer->readIndex+start_i+x) == *(head+x);
             }
             if (head_sign) {
-                if (buffer->readIndex+start_i+len >= RING_BUFFER_SIZE) {
+                if (buffer->readIndex+start_i+len > RING_BUFFER_SIZE && buffer->readIndex+start_i < RING_BUFFER_SIZE) {
                     memcpy(message,buffer->buffer+buffer->readIndex+start_i, RING_BUFFER_SIZE-(buffer->readIndex+start_i));
-                    memcpy(message+RING_BUFFER_SIZE-(buffer->readIndex+start_i),buffer->buffer, buffer->readIndex+start_i+len-RING_BUFFER_SIZE);
+                    memcpy(message+RING_BUFFER_SIZE-(buffer->readIndex+start_i), buffer->buffer, buffer->readIndex+start_i+len-RING_BUFFER_SIZE);
                 }else {
-                    memcpy(message,buffer->buffer+buffer->readIndex+start_i, len);
+                    memcpy(message,buffer->buffer+(buffer->readIndex+start_i)%RING_BUFFER_SIZE, len);
                 }
                 RBuffer_AddReadIndex(buffer,start_i+len);
                 return len;

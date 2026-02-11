@@ -116,7 +116,7 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  UART_Init(&user_debug_uart, &huart6, user_debug_uart_callback);
+//  UART_Init(&user_debug_uart, &huart6, user_debug_uart_callback);
   DJI_VT03_Init(&user_vt03);
   DBUS_Init(&user_dbus_DR16, &huart1);
   LED_Init(&red_led, LED_RED_GPIO_Port, LED_RED_Pin, 1);

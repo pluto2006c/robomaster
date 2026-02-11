@@ -16,17 +16,17 @@ void LOOP_EVENT_Handle(void) {
 /* 接口定义 --------------------------------------------------------------------*/
 
 // 调试串口
-UART_DRIVES user_debug_uart = {0};
-void user_debug_uart_callback(void * user_uart) {
-    UART_DRIVES *uart = (UART_DRIVES*)user_uart;
-    uint8_t message[UART_BUFFER_SIZE] = {0};
-    const uint16_t size = RBuffer_GetWithLen(&uart->rx_ringBuffer,message,RBuffer_GetLength(&uart->rx_ringBuffer));
-    if (size) {
-        char temp[UART_BUFFER_SIZE+32] = {0};
-        sprintf(temp, "message: %s\ndata.size: %d\n", (char *)message,size);
-        UART_QSend(uart, temp);
-    }
-}
+//UART_DRIVES user_debug_uart = {0};
+//void user_debug_uart_callback(void * user_uart) {
+//    UART_DRIVES *uart = (UART_DRIVES*)user_uart;
+//    uint8_t message[UART_BUFFER_SIZE] = {0};
+//    const uint16_t size = RBuffer_GetWithLen(&uart->rx_ringBuffer,message,RBuffer_GetLength(&uart->rx_ringBuffer));
+//    if (size) {
+//        char temp[UART_BUFFER_SIZE+32] = {0};
+//        sprintf(temp, "message: %s\ndata.size: %d\n", (char *)message,size);
+//        UART_QSend(uart, temp);
+//    }
+//}
 
 // 大疆 DR16 接收机
 DBUS_DRIVES user_dbus_DR16 = {0};
