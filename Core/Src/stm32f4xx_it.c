@@ -238,34 +238,39 @@ void SysTick_Handler(void)
 
   DJI_Motor_Target(&PICH_GM6020, 3700.0700f - 3.0667f * 0.8f * (float) user_vt03.ch1);
 
+  //计数器
+  if (TIM_counyer<1000) {
+    TIM_counyer++;
+  }else {
+    TIM_counyer = 0;
+  }
+
   if (user_vt03.mode_sw == 0) {
     //单发
-    DJI_Motor_Target(&LW_M3508, -5000);
-    DJI_Motor_Target(&RW_M3508, 5000);
+    DJI_Motor_Target(&LW_M3508, -8000);
+    DJI_Motor_Target(&RW_M3508, 8000);
     if (user_vt03.trigger == 1) {
-      DJI_Motor_Target(&TP_M2006, -400);
+      if (TIM_counyer % 999 == 0) {
+        DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_angle(&TP_M2006) - 819.1)));
+      }
     }else {
-      DJI_Motor_Target(&TP_M2006, 0);
-    }
-    if(user_vt03.fn2 == 1) {
-      DJI_Motor_Target(&TP_M2006, 400);
+      DJI_Motor_Target(&TP_M2006, get_motor_angle(&TP_M2006));
     }
   }else if (user_vt03.mode_sw == 2) {
       //连发
-    DJI_Motor_Target(&LW_M3508, -5000);
-    DJI_Motor_Target(&RW_M3508, 5000);
+    DJI_Motor_Target(&LW_M3508, -8000);
+    DJI_Motor_Target(&RW_M3508, 8000);
     if (user_vt03.trigger == 1) {
-      DJI_Motor_Target(&TP_M2006, -2000);
+      if (TIM_counyer % 40 == 0) {
+        DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_angle(&TP_M2006) - 819.1)));
+      }
     }else {
-      DJI_Motor_Target(&TP_M2006, 0);
-    }
-    if(user_vt03.fn2 == 1) {
-      DJI_Motor_Target(&TP_M2006, 400);
+      DJI_Motor_Target(&TP_M2006, get_motor_angle(&TP_M2006));
     }
   }else {
     DJI_Motor_Target(&LW_M3508, 0);
     DJI_Motor_Target(&RW_M3508, 0);
-    DJI_Motor_Target(&TP_M2006, 0);
+    DJI_Motor_Target(&TP_M2006, get_motor_angle(&TP_M2006));
   }
 
   DJI_Motor_Execute(&user_can_1);

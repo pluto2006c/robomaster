@@ -63,5 +63,8 @@ void DJI_Motor_Init(DJI_MOTOR_DRIVES *motor, CAN_DRIVES* can_drive, uint8_t id, 
 void DJI_Motor_Target(DJI_MOTOR_DRIVES *motor,float target);
 void DJI_Motor_Handle(CAN_DRIVES* can_drive);
 void DJI_Motor_Execute(CAN_DRIVES* can_drive);
-
+uint16_t get_motor_angle(DJI_MOTOR_DRIVES* motor);
+uint16_t angle_ring(uint16_t target);
+//拨弹盘计数器
+int TIM_counyer;
 #endif //__USER_DJI_MOTOR_H__

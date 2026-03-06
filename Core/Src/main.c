@@ -127,8 +127,8 @@ int main(void)
   DJI_Motor_Target(&PICH_GM6020, 3700.0700f);
   DJI_Motor_Init(&THC_GM6020, &user_can_1, 3, GM6020, Rotor_angle, 20.0f , 0.0f, 180.0f, 25000, 0);
   DJI_Motor_Target(&THC_GM6020, 5450);
-  DJI_Motor_Init(&TP_M2006, &user_can_1, 1, M2006, Rotor_speed, 10.0f , 0.0f, 5.0f, 8000, 0);
-  DJI_Motor_Target(&TP_M2006, 0);
+  DJI_Motor_Init(&TP_M2006, &user_can_1, 1, M2006, Rotor_angle, 10.0f , 0.0f, 5.0f, 8000, 0);
+  DJI_Motor_Target(&TP_M2006, (float)get_motor_angle(&TP_M2006)+(float)(get_motor_angle(&TP_M2006)*10 % 8191/10));
   DJI_Motor_Init(&LW_M3508, &user_can_1, 2, M3508_gear, Rotor_speed, 20.0f , 0.0f, 180.0f, 10000, 0);
   DJI_Motor_Target(&LW_M3508, 0);
   DJI_Motor_Init(&RW_M3508, &user_can_1, 3, M3508_gear, Rotor_speed, 20.0f , 0.0f, 180.0f, 10000, 0);
