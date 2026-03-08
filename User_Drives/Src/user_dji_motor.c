@@ -9,7 +9,7 @@
 /* 私有变量 ------------------------------------------------------------------*/
 static DJI_MOTOR_DRIVES *motor_drives[DJI_MOTOR_NUM];
 static uint8_t motor_num = 0;
-int TIM_counyer = 0;
+int user_time_counyer = 0;
 
 /* 函数体 --------------------------------------------------------------------*/
 float angle_error(const float feedback, const float target) {
@@ -184,8 +184,17 @@ void DJI_Motor_Execute(CAN_DRIVES* can_drive) {
     }
 }
 
-uint16_t get_motor_angle(DJI_MOTOR_DRIVES* motor) {
-    return  motor->rotor_angle;
+uint16_t get_motor_information(DJI_MOTOR_DRIVES* motor, enum Motor_information user_motor_information ) {
+    switch (user_motor_information) {
+        case rotor_angle:
+            return motor->rotor_angle;
+        case rotor_speed:
+            return motor->rotor_speed;
+        case torque_current:
+            return motor->torque_current;
+        default:
+            return 0;
+    }
 }
 
 uint16_t angle_ring(uint16_t target) {
