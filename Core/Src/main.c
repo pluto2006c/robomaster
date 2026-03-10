@@ -133,8 +133,8 @@ int main(void)
   DJI_Motor_Init(&RW_M3508, &user_can_1, 3, M3508_gear, Rotor_speed, 20.0f , 0.0f, 180.0f, 10000, 0);
   DJI_Motor_Target(&RW_M3508, 0);
 //拨弹盘归位初始化
-  DJI_Motor_Init(&TP_M2006, &user_can_1, 1, M2006, Torque_current, 50.0f , 0.0f, 0.0f, 8000, 5000);
-  DJI_Motor_Target(&TP_M2006, -100);
+  DJI_Motor_Init(&TP_M2006, &user_can_1, 1, M2006, Rotor_speed, 50.0f , 0.0f, 0.0f, 1000, 0);
+  DJI_Motor_Target(&TP_M2006, 5);
 
   /* USER CODE END 2 */
 

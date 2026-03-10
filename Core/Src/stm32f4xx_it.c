@@ -191,6 +191,7 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
+  static uint8_t user_m2006_mode = 0 ;
   /* USER CODE BEGIN SysTick_IRQn 0 */
 
   // user_dbus_DR16 是大疆接收机的结构体（可以粗糙的理解为变量的文件夹）。
@@ -246,9 +247,17 @@ void SysTick_Handler(void)
   }
 
 //拨弹盘归位后回复控制
-  if (get_motor_information(&TP_M2006 , rotor_speed) == 0 ) {
-    DJI_Motor_Init(&TP_M2006, &user_can_1, 1, M2006, rotor_angle, 50.0f , 0.0f, 0.0f, 8000, 5000);
+  if (get_motor_information(&TP_M2006 , rotor_speed) > 4 ) {
+    user_m2006_mode = 1 ;
   }
+
+
+  if (user_m2006_mode == 1 && get_motor_information(&TP_M2006 , rotor_speed) < 3 ) {
+    DJI_Motor_Init(&TP_M2006, &user_can_1, 1, M2006, Rotor_angle, 10.0f , 0.0f, 3.0f, 10000, 5000);
+
+  }
+
+
 
 
   if (user_vt03.mode_sw == 0) {
@@ -278,8 +287,12 @@ void SysTick_Handler(void)
     DJI_Motor_Target(&RW_M3508, 0);
     DJI_Motor_Target(&TP_M2006, get_motor_information(&TP_M2006 , rotor_angle));
   }
-  if (user_time_counyer % 8 == 0) {
-    DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 5*819.1)));
+
+  DJI_Motor_Target(&LW_M3508, -8000);
+  DJI_Motor_Target(&RW_M3508, 8000);
+
+  if (user_time_counyer % 4 == 0) {
+    DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 4*819.1)));
   }
 
   DJI_Motor_Execute(&user_can_1);
