@@ -247,14 +247,13 @@ void SysTick_Handler(void)
   }
 
 //拨弹盘归位后回复控制
-  if (get_motor_information(&TP_M2006 , rotor_speed) > 4 ) {
+  if (get_motor_information(&TP_M2006 , rotor_speed) == 5 ) {
     user_m2006_mode = 1 ;
   }
 
 
   if (user_m2006_mode == 1 && get_motor_information(&TP_M2006 , rotor_speed) < 3 ) {
     DJI_Motor_Init(&TP_M2006, &user_can_1, 1, M2006, Rotor_angle, 10.0f , 0.0f, 3.0f, 10000, 5000);
-
   }
 
 
@@ -266,7 +265,12 @@ void SysTick_Handler(void)
     DJI_Motor_Target(&RW_M3508, 8000);
     if (user_vt03.trigger == 1) {
       if (user_time_counyer % 28 == 0) {
-        DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 819.1)));
+        if (get_motor_information(&TP_M2006 , torque_current) >= 15900) {
+          //堵转自动反转
+          DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) + 8191)));
+        }else {
+          DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 819.1)));
+        }
       }
     }else {
       DJI_Motor_Target(&TP_M2006, get_motor_information(&TP_M2006 , rotor_angle));
@@ -277,7 +281,13 @@ void SysTick_Handler(void)
     DJI_Motor_Target(&RW_M3508, 8000);
     if (user_vt03.trigger == 1) {
       if (user_time_counyer % 5 == 0) {
-        DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 5*819.1)));
+        if (get_motor_information(&TP_M2006 , torque_current) >= 15900) {
+          //堵转自动反转
+          DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) + 8191)));
+        }else {
+          DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 5*819.1)));
+        }
+
       }
     }else {
       DJI_Motor_Target(&TP_M2006, get_motor_information(&TP_M2006 , rotor_angle));
@@ -288,9 +298,9 @@ void SysTick_Handler(void)
     DJI_Motor_Target(&TP_M2006, get_motor_information(&TP_M2006 , rotor_angle));
   }
 
+//调试代码
   DJI_Motor_Target(&LW_M3508, -8000);
   DJI_Motor_Target(&RW_M3508, 8000);
-
   if (user_time_counyer % 4 == 0) {
     DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 4*819.1)));
   }
