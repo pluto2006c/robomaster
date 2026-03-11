@@ -192,79 +192,26 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   static uint8_t user_m2006_mode = 0 ;
-  /* USER CODE BEGIN SysTick_IRQn 0 */
 
-  // user_dbus_DR16 是大疆接收机的结构体（可以粗糙的理解为变量的文件夹）。
-  // 其中的变量有 ch0、ch1、ch2、ch3、roll、sw1、sw2
-  // 其中 ch0、ch1、ch2、ch3、roll 的取值范围是 -660到660
-  // 其中 sw1、sw2 可能的值为 1、2、3 。默认中间记得值是 1
-
-  // 舵电机控制
-  // 函数的第二个参数是目标角度，取值范围 0-8095，对应 0-360 度
-  /*DJI_Motor_Target(&PICH_GM6020, 3700.0700f - 3.0667f * 0.8f * (float) user_dbus_DR16.ch1);
-  if (user_dbus_DR16.sw2==1) {
-    DJI_Motor_Target(&LW_M3508, -5000);
-    DJI_Motor_Target(&RW_M3508, 5000);
-    if (user_dbus_DR16.sw1==1) {
-      DJI_Motor_Target(&TP_M2006, -400);
-    }else if (user_dbus_DR16.sw1==2) {
-      DJI_Motor_Target(&TP_M2006, -3000);
-    }else {
-      DJI_Motor_Target(&TP_M2006, 0);
-    }
-  }else if (user_dbus_DR16.sw2==2) {
-    DJI_Motor_Target(&TP_M2006, 400);
-    DJI_Motor_Target(&LW_M3508, -5000);
-    DJI_Motor_Target(&RW_M3508, 5000);
-  }else {
-    DJI_Motor_Target(&LW_M3508, 0);
-    DJI_Motor_Target(&RW_M3508, 0);
-  }
-  DJI_Motor_Execute(&user_can_1);
-
-  //发送遥控器数据
-
-  uint8_t user_can_2_send_frame[8] = {0};
-
-  user_can_2_send_frame [0] = (uint8_t) (user_dbus_DR16.ch2 >> 0);
-  user_can_2_send_frame [1] = (uint8_t) (user_dbus_DR16.ch2 >> 8);
-  user_can_2_send_frame [2] = (uint8_t) (user_dbus_DR16.ch3 >> 0);
-  user_can_2_send_frame [3] = (uint8_t) (user_dbus_DR16.ch3 >> 8);
-  user_can_2_send_frame [4] = (uint8_t) (user_dbus_DR16.ch0 >> 0);
-  user_can_2_send_frame [5] = (uint8_t) (user_dbus_DR16.ch0 >> 8);
-  user_can_2_send_frame [6] = (uint8_t) (user_dbus_DR16.ch1 >> 0);
-  user_can_2_send_frame [7] = (uint8_t) (user_dbus_DR16.ch1 >> 8);
-
-  CAN_Send(&user_can_2, Re_control_data_ID_1 , user_can_2_send_frame, 8);*/
-
-  DJI_Motor_Target(&PICH_GM6020, 3700.0700f - 3.0667f * 0.8f * (float) user_vt03.ch1);
-
-  //计数器
-  if (user_time_counyer<1000) {
-    user_time_counyer++;
-  }else {
-    user_time_counyer = 0;
-  }
-
-//拨弹盘归位后回复控制
-  if (get_motor_information(&TP_M2006 , rotor_speed) == 5 ) {
+// //拨弹盘归位后回复控制
+  if (get_motor_information(&TP_M2006 , rotor_speed) == 100) {
     user_m2006_mode = 1 ;
   }
 
 
-  if (user_m2006_mode == 1 && get_motor_information(&TP_M2006 , rotor_speed) < 3 ) {
+  if (user_m2006_mode == 1 && get_motor_information(&TP_M2006 , rotor_speed) < 1 ) {
     DJI_Motor_Init(&TP_M2006, &user_can_1, 1, M2006, Rotor_angle, 10.0f , 0.0f, 3.0f, 10000, 5000);
   }
 
-
-
-
   if (user_vt03.mode_sw == 0) {
     //单发
-    DJI_Motor_Target(&LW_M3508, -8000);
-    DJI_Motor_Target(&RW_M3508, 8000);
+    DJI_Motor_Target(&LW_M3508, -7500);
+    DJI_Motor_Target(&RW_M3508, 7500);
+    //激发模式
     if (user_vt03.trigger == 1) {
+      //发射频率计时
       if (user_time_counyer % 28 == 0) {
+        //检测是否卡弹
         if (get_motor_information(&TP_M2006 , torque_current) >= 15900) {
           //堵转自动反转
           DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) + 8191)));
@@ -273,24 +220,28 @@ void SysTick_Handler(void)
         }
       }
     }else {
+      DJI_Motor_Target(&LW_M3508, 0);
+      DJI_Motor_Target(&RW_M3508, 0);
       DJI_Motor_Target(&TP_M2006, get_motor_information(&TP_M2006 , rotor_angle));
     }
-  }else if (user_vt03.mode_sw == 2) {
-      //连发
-    DJI_Motor_Target(&LW_M3508, -8000);
-    DJI_Motor_Target(&RW_M3508, 8000);
+  }
+  if (user_vt03.mode_sw == 2) {
+    //连发
+    DJI_Motor_Target(&LW_M3508, -7500);
+    DJI_Motor_Target(&RW_M3508, 7500);
     if (user_vt03.trigger == 1) {
+      //发射频率计时
       if (user_time_counyer % 5 == 0) {
+        //检测是否卡弹
         if (get_motor_information(&TP_M2006 , torque_current) >= 15900) {
           //堵转自动反转
           DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) + 8191)));
         }else {
           DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 5*819.1)));
         }
-
       }
     }else {
-      DJI_Motor_Target(&TP_M2006, get_motor_information(&TP_M2006 , rotor_angle));
+        DJI_Motor_Target(&TP_M2006, get_motor_information(&TP_M2006 , rotor_angle));
     }
   }else {
     DJI_Motor_Target(&LW_M3508, 0);
@@ -299,10 +250,13 @@ void SysTick_Handler(void)
   }
 
 //调试代码
-  DJI_Motor_Target(&LW_M3508, -8000);
-  DJI_Motor_Target(&RW_M3508, 8000);
-  if (user_time_counyer % 4 == 0) {
-    DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 4*819.1)));
+  DJI_Motor_Target(&LW_M3508, -7500);
+  DJI_Motor_Target(&RW_M3508, 7500);
+  if (get_motor_information(&TP_M2006 , torque_current) >= 15900) {
+    //堵转自动反转
+    DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) + 8191)));
+  }else {
+    DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 819.1)));
   }
 
   DJI_Motor_Execute(&user_can_1);
