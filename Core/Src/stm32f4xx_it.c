@@ -192,7 +192,11 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   //计时器计数
-   user_time_counyer ++ ;
+  if (user_time_counyer >= 1000) {
+    user_time_counyer = 0 ;
+  }else {
+    user_time_counyer ++ ;
+  }
   //拨弹盘初始化
   static uint8_t user_m2006_mode = 0 ;
   //热量计数
