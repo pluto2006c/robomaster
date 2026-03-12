@@ -191,7 +191,21 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
+  //计时器计数
+   user_time_counyer ++ ;
+  //拨弹盘初始化
   static uint8_t user_m2006_mode = 0 ;
+  //热量计数
+  static uint8_t shoot_heat = 0 ;
+  //热量管理
+  if (user_time_counyer % 1000 == 0) {
+    if (shoot_heat <= 182) {
+      shoot_heat += 12 ;
+    }else {
+      shoot_heat = 200 ;
+    }
+  }
+
 
 // //拨弹盘归位后回复控制
   if (get_motor_information(&TP_M2006 , rotor_speed) == 100) {
@@ -210,13 +224,16 @@ void SysTick_Handler(void)
     //激发模式
     if (user_vt03.trigger == 1) {
       //发射频率计时
-      if (user_time_counyer % 28 == 0) {
+      if (user_time_counyer % 28 == 0 && shoot_heat <= 190 ) {
         //检测是否卡弹
         if (get_motor_information(&TP_M2006 , torque_current) >= 15900) {
           //堵转自动反转
           DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) + 8191)));
         }else {
           DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 819.1)));
+        }
+        if (user_time_counyer % 1000 == 0 ) {
+          shoot_heat += 10 ;
         }
       }
     }else {
@@ -231,13 +248,16 @@ void SysTick_Handler(void)
     DJI_Motor_Target(&RW_M3508, 7500);
     if (user_vt03.trigger == 1) {
       //发射频率计时
-      if (user_time_counyer % 5 == 0) {
+      if (user_time_counyer % 5 == 0 && shoot_heat <= 190) {
         //检测是否卡弹
         if (get_motor_information(&TP_M2006 , torque_current) >= 15900) {
           //堵转自动反转
           DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) + 8191)));
         }else {
           DJI_Motor_Target(&TP_M2006, angle_ring((uint16_t)((float)get_motor_information(&TP_M2006 , rotor_angle) - 5*819.1)));
+        }
+        if (user_time_counyer % 34 == 0 ) {
+          shoot_heat += 10 ;
         }
       }
     }else {
